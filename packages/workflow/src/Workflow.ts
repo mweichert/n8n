@@ -1,10 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-for-in-array */
-
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 
 import type {
@@ -55,6 +52,18 @@ function dedupe<T>(arr: T[]): T[] {
 	return [...new Set(arr)];
 }
 
+interface Parameters {
+	id?: string;
+	name?: string;
+	nodes: INode[];
+	connections: IConnections;
+	active: boolean;
+	nodeTypes: INodeTypes;
+	staticData?: IDataObject;
+	settings?: IWorkflowSettings;
+	pinData?: IPinData;
+}
+
 export class Workflow {
 	id: string | undefined;
 
@@ -80,18 +89,7 @@ export class Workflow {
 
 	pinData?: IPinData;
 
-	// constructor(id: string | undefined, nodes: INode[], connections: IConnections, active: boolean, nodeTypes: INodeTypes, staticData?: IDataObject, settings?: IWorkflowSettings) {
-	constructor(parameters: {
-		id?: string;
-		name?: string;
-		nodes: INode[];
-		connections: IConnections;
-		active: boolean;
-		nodeTypes: INodeTypes;
-		staticData?: IDataObject;
-		settings?: IWorkflowSettings;
-		pinData?: IPinData;
-	}) {
+	constructor(parameters: Parameters) {
 		this.id = parameters.id;
 		this.name = parameters.name;
 		this.nodeTypes = parameters.nodeTypes;

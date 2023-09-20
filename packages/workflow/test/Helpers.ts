@@ -38,6 +38,8 @@ import type { Workflow } from '@/Workflow';
 import { WorkflowDataProxy } from '@/WorkflowDataProxy';
 import { WorkflowHooks } from '@/WorkflowHooks';
 import * as NodeHelpers from '@/NodeHelpers';
+import { deepCopy } from '@/utils';
+import { getGlobalState } from '@/GlobalState';
 
 export interface INodeTypesObject {
 	[key: string]: INodeType;
@@ -155,7 +157,6 @@ export function getNodeParameter(
 	parameterName: string,
 	itemIndex: number,
 	mode: WorkflowExecuteMode,
-	timezone: string,
 	additionalKeys: IWorkflowDataProxyAdditionalKeys,
 	executeData: IExecuteData,
 	fallbackValue?: any,
@@ -181,7 +182,6 @@ export function getNodeParameter(
 			node.name,
 			connectionInputData,
 			mode,
-			timezone,
 			additionalKeys,
 		);
 	} catch (e) {
@@ -268,7 +268,6 @@ export function getExecuteFunctions(
 					parameterName,
 					itemIndex,
 					mode,
-					additionalData.timezone,
 					{},
 					fallbackValue,
 				);
@@ -283,7 +282,7 @@ export function getExecuteFunctions(
 				return additionalData.restApiUrl;
 			},
 			getTimezone: (): string => {
-				return additionalData.timezone;
+				return workflow.settings.timezone ?? getGlobalState().defaultTimezone;
 			},
 			getExecuteData: (): IExecuteData => {
 				return executeData;
@@ -305,7 +304,6 @@ export function getExecuteFunctions(
 					connectionInputData,
 					{},
 					mode,
-					additionalData.timezone,
 					{},
 					executeData,
 				);
@@ -449,7 +447,7 @@ export function getExecuteSingleFunctions(
 				return additionalData.restApiUrl;
 			},
 			getTimezone: (): string => {
-				return additionalData.timezone;
+				return workflow.settings.timezone ?? getGlobalState().defaultTimezone;
 			},
 			getExecuteData: (): IExecuteData => {
 				return executeData;
@@ -472,7 +470,6 @@ export function getExecuteSingleFunctions(
 					parameterName,
 					itemIndex,
 					mode,
-					additionalData.timezone,
 					{},
 					fallbackValue,
 				);
@@ -494,7 +491,6 @@ export function getExecuteSingleFunctions(
 					connectionInputData,
 					{},
 					mode,
-					additionalData.timezone,
 					{},
 					executeData,
 				);
@@ -708,7 +704,6 @@ export function WorkflowExecuteAdditionalData(): IWorkflowExecuteAdditionalData 
 		sendMessageToUI: (message: string) => {},
 		restApiUrl: '',
 		encryptionKey: 'test',
-		timezone: 'America/New_York',
 		webhookBaseUrl: 'webhook',
 		webhookWaitingBaseUrl: 'webhook-waiting',
 		webhookTestBaseUrl: 'webhook-test',

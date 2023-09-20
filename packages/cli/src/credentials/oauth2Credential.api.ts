@@ -88,14 +88,12 @@ oauth2CredentialController.get(
 		const credentialType = (credential as unknown as ICredentialsEncrypted).type;
 
 		const mode: WorkflowExecuteMode = 'internal';
-		const timezone = config.getEnv('generic.timezone');
 		const credentialsHelper = new CredentialsHelper(encryptionKey);
 		const decryptedDataOriginal = await credentialsHelper.getDecrypted(
 			additionalData,
 			credential as INodeCredentialsDetails,
 			credentialType,
 			mode,
-			timezone,
 			true,
 		);
 
@@ -116,7 +114,6 @@ oauth2CredentialController.get(
 			decryptedDataOriginal,
 			credentialType,
 			mode,
-			timezone,
 		);
 
 		const token = new Csrf();
@@ -232,14 +229,12 @@ oauth2CredentialController.get(
 			const additionalData = await WorkflowExecuteAdditionalData.getBase(state.cid);
 
 			const mode: WorkflowExecuteMode = 'internal';
-			const timezone = config.getEnv('generic.timezone');
 			const credentialsHelper = new CredentialsHelper(encryptionKey);
 			const decryptedDataOriginal = await credentialsHelper.getDecrypted(
 				additionalData,
 				credential as INodeCredentialsDetails,
 				(credential as unknown as ICredentialsEncrypted).type,
 				mode,
-				timezone,
 				true,
 			);
 			const oauthCredentials = credentialsHelper.applyDefaultsAndOverwrites(
@@ -247,7 +242,6 @@ oauth2CredentialController.get(
 				decryptedDataOriginal,
 				(credential as unknown as ICredentialsEncrypted).type,
 				mode,
-				timezone,
 			);
 
 			const token = new Csrf();

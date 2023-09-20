@@ -138,7 +138,6 @@ export function WorkflowExecuteAdditionalData(
 		sendMessageToUI: (message: string) => {},
 		restApiUrl: '',
 		encryptionKey: 'test',
-		timezone: 'America/New_York',
 		webhookBaseUrl: 'webhook',
 		webhookWaitingBaseUrl: 'webhook-waiting',
 		webhookTestBaseUrl: 'webhook-test',

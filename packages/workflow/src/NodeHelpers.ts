@@ -881,7 +881,6 @@ export function getNodeWebhooks(
 			node,
 			webhookDescription.path,
 			mode,
-			additionalData.timezone,
 			{},
 		);
 		if (nodeWebhookPath === undefined) {
@@ -905,7 +904,6 @@ export function getNodeWebhooks(
 			node,
 			webhookDescription.isFullPath,
 			'internal',
-			additionalData.timezone,
 			{},
 			undefined,
 			false,
@@ -914,7 +912,6 @@ export function getNodeWebhooks(
 			node,
 			webhookDescription.restartWebhook,
 			'internal',
-			additionalData.timezone,
 			{},
 			undefined,
 			false,
@@ -925,7 +922,6 @@ export function getNodeWebhooks(
 			node,
 			webhookDescription.httpMethod,
 			mode,
-			additionalData.timezone,
 			{},
 			undefined,
 			'GET',

@@ -22,6 +22,7 @@ import type { Workflow } from './Workflow';
 import { extend, extendOptional } from './Extensions';
 import { extendedFunctions } from './Extensions/ExtendedFunctions';
 import { extendSyntax } from './Extensions/ExpressionExtension';
+import { getGlobalState } from './GlobalState';
 
 const IS_FRONTEND_IN_DEV_MODE =
 	typeof process === 'object' &&
@@ -61,11 +62,7 @@ const fnConstructors = {
 };
 
 export class Expression {
-	workflow: Workflow;
-
-	constructor(workflow: Workflow) {
-		this.workflow = workflow;
-	}
+	constructor(private readonly workflow: Workflow) {}
 
 	static resolveWithoutWorkflow(expression: string, data: IDataObject = {}) {
 		return tmpl.tmpl(expression, data);
@@ -87,7 +84,7 @@ export class Expression {
 		if (value instanceof Date) {
 			// We don't want to use JSON.stringify for dates since it disregards workflow timezone
 			result = DateTime.fromJSDate(value, {
-				zone: this.workflow.settings?.timezone ?? 'default',
+				zone: this.workflow.settings?.timezone ?? getGlobalState().defaultTimezone,
 			}).toISO();
 		} else {
 			result = JSON.stringify(value);
@@ -116,7 +113,6 @@ export class Expression {
 		activeNodeName: string,
 		connectionInputData: INodeExecutionData[],
 		mode: WorkflowExecuteMode,
-		timezone: string,
 		additionalKeys: IWorkflowDataProxyAdditionalKeys,
 		executeData?: IExecuteData,
 		returnObjectAsString = false,
@@ -144,7 +140,6 @@ export class Expression {
 			connectionInputData,
 			siblingParameters,
 			mode,
-			timezone,
 			additionalKeys,
 			executeData,
 			-1,
@@ -371,7 +366,6 @@ export class Expression {
 		node: INode,
 		parameterValue: string | boolean | undefined,
 		mode: WorkflowExecuteMode,
-		timezone: string,
 		additionalKeys: IWorkflowDataProxyAdditionalKeys,
 		executeData?: IExecuteData,
 		defaultValue?: boolean | number | string | unknown[],
@@ -399,7 +393,6 @@ export class Expression {
 			node.name,
 			connectionInputData,
 			mode,
-			timezone,
 			additionalKeys,
 			executeData,
 		) as boolean | number | string | undefined;
@@ -415,7 +408,6 @@ export class Expression {
 		node: INode,
 		parameterValue: NodeParameterValue | INodeParameters | NodeParameterValue[] | INodeParameters[],
 		mode: WorkflowExecuteMode,
-		timezone: string,
 		additionalKeys: IWorkflowDataProxyAdditionalKeys,
 		executeData?: IExecuteData,
 		defaultValue: NodeParameterValueType | undefined = undefined,
@@ -445,7 +437,6 @@ export class Expression {
 			node.name,
 			connectionInputData,
 			mode,
-			timezone,
 			additionalKeys,
 			executeData,
 			false,
@@ -461,7 +452,6 @@ export class Expression {
 			node.name,
 			connectionInputData,
 			mode,
-			timezone,
 			additionalKeys,
 			executeData,
 			false,
@@ -486,7 +476,6 @@ export class Expression {
 		activeNodeName: string,
 		connectionInputData: INodeExecutionData[],
 		mode: WorkflowExecuteMode,
-		timezone: string,
 		additionalKeys: IWorkflowDataProxyAdditionalKeys,
 		executeData?: IExecuteData,
 		returnObjectAsString = false,
@@ -511,7 +500,6 @@ export class Expression {
 					activeNodeName,
 					connectionInputData,
 					mode,
-					timezone,
 					additionalKeys,
 					executeData,
 					returnObjectAsString,
@@ -528,7 +516,6 @@ export class Expression {
 				activeNodeName,
 				connectionInputData,
 				mode,
-				timezone,
 				additionalKeys,
 				executeData,
 				returnObjectAsString,
@@ -547,7 +534,6 @@ export class Expression {
 				activeNodeName,
 				connectionInputData,
 				mode,
-				timezone,
 				additionalKeys,
 				executeData,
 				returnObjectAsString,
