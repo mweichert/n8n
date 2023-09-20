@@ -138,7 +138,6 @@ function mockExecutionData(): IWorkflowExecutionDataProcess {
 			nodes: [],
 			connections: {},
 		},
-		userId: uuid(),
 	};
 }
 

@@ -360,7 +360,6 @@ export class WorkflowsService {
 			startNodes,
 			destinationNode,
 		}: WorkflowRequest.ManualRunPayload,
-		user: User,
 		sessionId: string,
 	) {
 		const EXECUTION_MODE = 'manual';
@@ -377,7 +376,6 @@ export class WorkflowsService {
 				destinationNode === undefined)
 		) {
 			const needsWebhook = await Container.get(TestWebhooks).needsWebhookData(
-				user.id,
 				workflowData,
 				EXECUTION_MODE,
 				ACTIVATION_MODE,
@@ -403,7 +401,6 @@ export class WorkflowsService {
 			sessionId,
 			startNodes,
 			workflowData,
-			userId: user.id,
 		};
 
 		const hasRunData = (node: INode) => runData !== undefined && !!runData[node.name];

@@ -728,10 +728,7 @@ export class Server extends AbstractServer {
 						credentials,
 					);
 
-					const additionalData = await WorkflowExecuteAdditionalData.getBase(
-						req.user.id,
-						currentNodeParameters,
-					);
+					const additionalData = await WorkflowExecuteAdditionalData.getBase(currentNodeParameters);
 
 					if (methodName) {
 						return loadDataInstance.getOptionsViaMethodName(methodName, additionalData);
@@ -789,10 +786,7 @@ export class Server extends AbstractServer {
 						credentials,
 					);
 
-					const additionalData = await WorkflowExecuteAdditionalData.getBase(
-						req.user.id,
-						currentNodeParameters,
-					);
+					const additionalData = await WorkflowExecuteAdditionalData.getBase(currentNodeParameters);
 
 					if (methodName) {
 						return listSearchInstance.getOptionsViaMethodName(
@@ -845,10 +839,7 @@ export class Server extends AbstractServer {
 						credentials,
 					);
 
-					const additionalData = await WorkflowExecuteAdditionalData.getBase(
-						req.user.id,
-						currentNodeParameters,
-					);
+					const additionalData = await WorkflowExecuteAdditionalData.getBase(currentNodeParameters);
 
 					const fields = await loadMappingOptionsInstance.getOptionsViaMethodName(
 						methodName,
@@ -956,7 +947,7 @@ export class Server extends AbstractServer {
 					throw new ResponseHelper.InternalServerError(error.message);
 				}
 
-				const additionalData = await WorkflowExecuteAdditionalData.getBase(req.user.id);
+				const additionalData = await WorkflowExecuteAdditionalData.getBase();
 
 				const mode: WorkflowExecuteMode = 'internal';
 				const credentialsHelper = new CredentialsHelper(encryptionKey);
@@ -1103,7 +1094,7 @@ export class Server extends AbstractServer {
 						throw new ResponseHelper.InternalServerError(error.message);
 					}
 
-					const additionalData = await WorkflowExecuteAdditionalData.getBase(req.user.id);
+					const additionalData = await WorkflowExecuteAdditionalData.getBase();
 
 					const mode: WorkflowExecuteMode = 'internal';
 					const credentialsHelper = new CredentialsHelper(encryptionKey);

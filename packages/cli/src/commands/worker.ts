@@ -175,7 +175,6 @@ export class Worker extends BaseCommand {
 		});
 
 		const additionalData = await WorkflowExecuteAdditionalData.getBase(
-			workflowOwner.id,
 			undefined,
 			executionTimeoutTimestamp,
 		);

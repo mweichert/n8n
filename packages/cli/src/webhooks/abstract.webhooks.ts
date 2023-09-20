@@ -42,7 +42,6 @@ import type { IExecutionDb, IWorkflowDb, IWorkflowExecutionDataProcess } from '@
 
 import {
 	InternalServerError,
-	NotFoundError,
 	UnprocessableRequestError,
 	sendErrorResponse,
 	sendSuccessResponse,
@@ -51,11 +50,8 @@ import * as WorkflowHelpers from '@/WorkflowHelpers';
 import { WorkflowRunner } from '@/WorkflowRunner';
 import * as WorkflowExecuteAdditionalData from '@/WorkflowExecuteAdditionalData';
 import { ActiveExecutions } from '@/ActiveExecutions';
-import type { User } from '@db/entities/User';
-import type { WorkflowEntity } from '@db/entities/WorkflowEntity';
 import { parseBody } from '@/middlewares';
 import { EventsService } from '@/services/events.service';
-import { OwnershipService } from '@/services/ownership.service';
 import { WorkflowsService } from '@/workflows/workflows.services';
 
 import type { WebhookCORSRequest, WebhookRequest, WebhookResponseCallbackData } from './types';
@@ -136,22 +132,8 @@ export abstract class AbstractWebhooks {
 	): Promise<string | undefined> {
 		this.preWebhookExecution(startNode);
 
-		let user: User;
-		if (
-			(workflowData as WorkflowEntity).shared?.length &&
-			(workflowData as WorkflowEntity).shared[0].user
-		) {
-			user = (workflowData as WorkflowEntity).shared[0].user;
-		} else {
-			try {
-				user = await Container.get(OwnershipService).getWorkflowOwnerCached(workflowData.id);
-			} catch (error) {
-				throw new NotFoundError('Cannot find workflow');
-			}
-		}
-
 		// Prepare everything that is needed to run the workflow
-		const additionalData = await WorkflowExecuteAdditionalData.getBase(user.id);
+		const additionalData = await WorkflowExecuteAdditionalData.getBase();
 		const additionalKeys: IWorkflowDataProxyAdditionalKeys = {
 			$executionId: executionId,
 		};
@@ -411,7 +393,6 @@ export abstract class AbstractWebhooks {
 				executionData: runExecutionData,
 				sessionId,
 				workflowData,
-				userId: user.id,
 			};
 
 			let responsePromise: IDeferredPromise<IN8nHttpFullResponse> | undefined;

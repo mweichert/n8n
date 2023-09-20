@@ -26,7 +26,6 @@ import type {
 	IWorkflowExecuteAdditionalData,
 	IWorkflowExecuteHooks,
 	IWorkflowSettings,
-	NodeOperationError,
 	WorkflowExecuteMode,
 } from 'n8n-workflow';
 import {
@@ -52,9 +51,7 @@ import * as WorkflowExecuteAdditionalData from '@/WorkflowExecuteAdditionalData'
 import { getLogger } from '@/Logger';
 
 import config from '@/config';
-import { generateFailedExecutionFromError } from '@/WorkflowHelpers';
 import { initErrorHandling } from '@/ErrorReporting';
-import { PermissionChecker } from '@/UserManagement/PermissionChecker';
 import { License } from '@/License';
 import { InternalHooks } from '@/InternalHooks';
 import { PostHogClient } from '@/posthog';
@@ -94,7 +91,6 @@ class WorkflowRunnerProcess {
 		LoggerProxy.init(logger);
 
 		this.data = inputData;
-		const { userId } = inputData;
 
 		logger.verbose('Initializing n8n sub-process', {
 			pid: process.pid,
@@ -148,24 +144,7 @@ class WorkflowRunnerProcess {
 			settings: this.data.workflowData.settings,
 			pinData: this.data.pinData,
 		});
-		try {
-			await PermissionChecker.check(this.workflow, userId);
-		} catch (error) {
-			const caughtError = error as NodeOperationError;
-			const failedExecutionData = generateFailedExecutionFromError(
-				this.data.executionMode,
-				caughtError,
-				caughtError.node,
-			);
-
-			// Force the `workflowExecuteAfter` hook to run since
-			// it's the one responsible for saving the execution
-			await this.sendHookToParentProcess('workflowExecuteAfter', [failedExecutionData]);
-			// Interrupt the workflow execution since we don't have all necessary creds.
-			return failedExecutionData;
-		}
 		const additionalData = await WorkflowExecuteAdditionalData.getBase(
-			userId,
 			undefined,
 			workflowTimeout <= 0 ? undefined : Date.now() + workflowTimeout * 1000,
 		);
@@ -217,7 +196,6 @@ class WorkflowRunnerProcess {
 			);
 			const runData = await WorkflowExecuteAdditionalData.getRunData(
 				workflowData,
-				additionalData.userId,
 				options?.inputData,
 			);
 			await sendToParentProcess('startExecution', { runData });
@@ -248,12 +226,7 @@ class WorkflowRunnerProcess {
 				const { workflow } = executeWorkflowFunctionOutput;
 				result = await workflowExecute.processRunExecutionData(workflow);
 				await externalHooks.run('workflow.postExecute', [result, workflowData, executionId]);
-				void Container.get(InternalHooks).onWorkflowPostExecute(
-					executionId,
-					workflowData,
-					result,
-					additionalData.userId,
-				);
+				void Container.get(InternalHooks).onWorkflowPostExecute(executionId, workflowData, result);
 				await sendToParentProcess('finishExecution', { executionId, result });
 				delete this.childExecutions[executionId];
 			} catch (e) {

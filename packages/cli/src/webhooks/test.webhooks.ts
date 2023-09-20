@@ -180,14 +180,13 @@ export class TestWebhooks extends AbstractWebhooks {
 	 * If yes it waits for it and resolves with the result of the workflow if not it simply resolves with undefined
 	 */
 	async needsWebhookData(
-		ownerId: string,
 		workflowData: IWorkflowDb,
 		mode: WorkflowExecuteMode,
 		activation: WorkflowActivateMode,
 		sessionId: string,
 		destinationNode?: string,
 	): Promise<boolean> {
-		const additionalData = await WorkflowExecuteAdditionalData.getBase(ownerId);
+		const additionalData = await WorkflowExecuteAdditionalData.getBase();
 		const workflow = new Workflow({
 			id: workflowData.id?.toString(),
 			name: workflowData.name,

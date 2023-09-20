@@ -250,7 +250,6 @@ export class InternalHooks implements IInternalHooksClass {
 		if ('executionData' in data) {
 			payload = {
 				executionId,
-				userId: data.userId ?? undefined,
 				workflowId: data.workflowData.id?.toString(),
 				isManual: data.executionMode === 'manual',
 				workflowName: data.workflowData.name,
@@ -308,7 +307,6 @@ export class InternalHooks implements IInternalHooksClass {
 		executionId: string,
 		workflow: IWorkflowBase,
 		runData?: IRun,
-		userId?: string,
 	): Promise<void> {
 		if (!workflow.id) {
 			return;
@@ -322,10 +320,6 @@ export class InternalHooks implements IInternalHooksClass {
 			version_cli: N8N_VERSION,
 			success: false,
 		};
-
-		if (userId) {
-			telemetryProperties.user_id = userId;
-		}
 
 		if (runData?.data.resultData.error?.message?.includes('canceled')) {
 			runData.status = 'canceled';
@@ -383,16 +377,7 @@ export class InternalHooks implements IInternalHooksClass {
 					nodeGraphResult = TelemetryHelpers.generateNodesGraph(workflow, this.nodeTypes);
 				}
 
-				let userRole: 'owner' | 'sharee' | undefined = undefined;
-				if (userId) {
-					const role = await this.roleService.findRoleByUserAndWorkflow(userId, workflow.id);
-					if (role) {
-						userRole = role.name === 'owner' ? 'owner' : 'sharee';
-					}
-				}
-
 				const manualExecEventProperties: ITelemetryTrackProperties = {
-					user_id: userId,
 					workflow_id: workflow.id,
 					status: executionStatus,
 					executionStatus: runData?.status ?? 'unknown',
@@ -401,7 +386,6 @@ export class InternalHooks implements IInternalHooksClass {
 					node_graph_string: telemetryProperties.node_graph_string as string,
 					error_node_id: telemetryProperties.error_node_id as string,
 					webhook_domain: null,
-					sharing_role: userRole,
 				};
 
 				if (!manualExecEventProperties.node_graph_string) {

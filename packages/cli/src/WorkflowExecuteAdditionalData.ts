@@ -1,13 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-
 /* eslint-disable id-denylist */
-
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { UserSettings, WorkflowExecute } from 'n8n-core';
 
@@ -53,7 +49,6 @@ import { Push } from '@/push';
 import * as WebhookHelpers from '@/WebhookHelpers';
 import * as WorkflowHelpers from '@/WorkflowHelpers';
 import { findSubworkflowStart, isWorkflowIdValid } from '@/utils';
-import { PermissionChecker } from './UserManagement/PermissionChecker';
 import { WorkflowsService } from './workflows/workflows.services';
 import { InternalHooks } from '@/InternalHooks';
 import { ExecutionRepository } from '@db/repositories';
@@ -672,7 +667,6 @@ function hookFunctionsSaveWorker(): IWorkflowExecuteHooks {
 
 export async function getRunData(
 	workflowData: IWorkflowBase,
-	userId: string,
 	inputData?: INodeExecutionData[],
 ): Promise<IWorkflowExecutionDataProcess> {
 	const mode = 'integrated';
@@ -714,7 +708,6 @@ export async function getRunData(
 		executionData: runExecutionData,
 		// @ts-ignore
 		workflowData,
-		userId,
 	};
 
 	return runData;
@@ -793,9 +786,7 @@ async function executeWorkflow(
 		settings: workflowData.settings,
 	});
 
-	const runData =
-		options.loadedRunData ??
-		(await getRunData(workflowData, additionalData.userId, options.inputData));
+	const runData = options.loadedRunData ?? (await getRunData(workflowData, options.inputData));
 
 	let executionId;
 
@@ -812,16 +803,8 @@ async function executeWorkflow(
 
 	let data;
 	try {
-		await PermissionChecker.check(workflow, additionalData.userId);
-		await PermissionChecker.checkSubworkflowExecutePolicy(
-			workflow,
-			additionalData.userId,
-			options.parentWorkflowId,
-		);
-
-		// Create new additionalData to have different workflow loaded and to call
-		// different webhooks
-		const additionalDataIntegrated = await getBase(additionalData.userId);
+		// Create new additionalData to have different workflow loaded and to call different webhooks
+		const additionalDataIntegrated = await getBase();
 		additionalDataIntegrated.hooks = getWorkflowHooksIntegrated(
 			runData.executionMode,
 			executionId,
@@ -913,7 +896,7 @@ async function executeWorkflow(
 
 	await externalHooks.run('workflow.postExecute', [data, workflowData, executionId]);
 
-	void internalHooks.onWorkflowPostExecute(executionId, workflowData, data, additionalData.userId);
+	void internalHooks.onWorkflowPostExecute(executionId, workflowData, data);
 
 	if (data.finished === true) {
 		// Workflow did finish successfully
@@ -972,7 +955,6 @@ export function sendMessageToUI(source: string, messages: any[]) {
  * Returns the base additional data without webhooks
  */
 export async function getBase(
-	userId: string,
 	currentNodeParameters?: INodeParameters,
 	executionTimeoutTimestamp?: number,
 ): Promise<IWorkflowExecuteAdditionalData> {
@@ -998,7 +980,6 @@ export async function getBase(
 		webhookTestBaseUrl,
 		currentNodeParameters,
 		executionTimeoutTimestamp,
-		userId,
 		setExecutionStatus,
 		variables,
 		secretsHelpers: Container.get(SecretsHelper),

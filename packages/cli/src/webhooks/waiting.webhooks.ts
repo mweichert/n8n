@@ -88,7 +88,7 @@ export class WaitingWebhooks extends AbstractWebhooks {
 			throw new NotFoundError('Could not find node to process webhook.');
 		}
 
-		const additionalData = await WorkflowExecuteAdditionalData.getBase(workflowOwner.id);
+		const additionalData = await WorkflowExecuteAdditionalData.getBase();
 		const webhookData = NodeHelpers.getNodeWebhooks(workflow, startNode, additionalData).find(
 			(webhook) =>
 				webhook.httpMethod === req.method &&

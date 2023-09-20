@@ -571,7 +571,7 @@ export class CredentialsHelper extends ICredentialsHelper {
 
 		if (credentialsDecrypted.data) {
 			try {
-				const additionalData = await WorkflowExecuteAdditionalData.getBase(user.id);
+				const additionalData = await WorkflowExecuteAdditionalData.getBase();
 				credentialsDecrypted.data = this.applyDefaultsAndOverwrites(
 					additionalData,
 					credentialsDecrypted.data,
@@ -677,7 +677,7 @@ export class CredentialsHelper extends ICredentialsHelper {
 			},
 		};
 
-		const additionalData = await WorkflowExecuteAdditionalData.getBase(user.id, node.parameters);
+		const additionalData = await WorkflowExecuteAdditionalData.getBase(node.parameters);
 
 		const routingNode = new RoutingNode(
 			workflow,

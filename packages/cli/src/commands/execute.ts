@@ -8,7 +8,6 @@ import { ActiveExecutions } from '@/ActiveExecutions';
 import * as Db from '@/Db';
 import { WorkflowRunner } from '@/WorkflowRunner';
 import type { IWorkflowExecutionDataProcess } from '@/Interfaces';
-import { getInstanceOwner } from '@/UserManagement/UserManagementHelper';
 import { findCliWorkflowStart, isWorkflowIdValid } from '@/utils';
 import { BaseCommand } from './BaseCommand';
 import { Container } from 'typedi';
@@ -98,12 +97,10 @@ export class Execute extends BaseCommand {
 
 		const startingNode = findCliWorkflowStart(workflowData.nodes);
 
-		const user = await getInstanceOwner();
 		const runData: IWorkflowExecutionDataProcess = {
 			executionMode: 'cli',
 			startNodes: [startingNode.name],
 			workflowData,
-			userId: user.id,
 		};
 
 		const workflowRunner = new WorkflowRunner();

@@ -262,7 +262,6 @@ export async function executeErrorWorkflow(
 			executionMode,
 			executionData: runExecutionData,
 			workflowData,
-			userId: runningUser.id,
 		};
 
 		const workflowRunner = new WorkflowRunner();

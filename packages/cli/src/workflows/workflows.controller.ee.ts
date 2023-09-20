@@ -261,6 +261,6 @@ EEWorkflowController.post(
 			req.body.workflowData.nodes = safeWorkflow.nodes;
 		}
 
-		return EEWorkflows.runManually(req.body, req.user, req.headers.sessionid as string);
+		return EEWorkflows.runManually(req.body, req.headers.sessionid as string);
 	}),
 );

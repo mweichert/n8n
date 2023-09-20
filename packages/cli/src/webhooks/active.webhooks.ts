@@ -88,7 +88,6 @@ export class ActiveWebhooks extends AbstractWebhooks {
 
 		const workflowData = await this.workflowRepository.findOne({
 			where: { id: webhook.workflowId },
-			relations: ['shared', 'shared.user', 'shared.user.globalRole'],
 		});
 
 		if (workflowData === null) {
@@ -106,9 +105,7 @@ export class ActiveWebhooks extends AbstractWebhooks {
 			settings: workflowData.settings,
 		});
 
-		const additionalData = await WorkflowExecuteAdditionalData.getBase(
-			workflowData.shared[0].userId,
-		);
+		const additionalData = await WorkflowExecuteAdditionalData.getBase();
 
 		const webhookData = NodeHelpers.getNodeWebhooks(
 			workflow,
@@ -242,7 +239,6 @@ export class ActiveWebhooks extends AbstractWebhooks {
 	async removeWorkflowWebhooks(workflowId: string): Promise<void> {
 		const workflowData = await this.workflowRepository.findOne({
 			where: { id: workflowId },
-			relations: ['shared', 'shared.user', 'shared.user.globalRole'],
 		});
 
 		if (workflowData === null) {
@@ -262,9 +258,7 @@ export class ActiveWebhooks extends AbstractWebhooks {
 
 		const mode = 'internal';
 
-		const additionalData = await WorkflowExecuteAdditionalData.getBase(
-			workflowData.shared[0].user.id,
-		);
+		const additionalData = await WorkflowExecuteAdditionalData.getBase();
 
 		const webhooks = this.getWorkflowWebhooks(workflow, additionalData, undefined, true);
 

@@ -83,7 +83,7 @@ oauth2CredentialController.get(
 			throw new ResponseHelper.InternalServerError((error as Error).message);
 		}
 
-		const additionalData = await WorkflowExecuteAdditionalData.getBase(req.user.id);
+		const additionalData = await WorkflowExecuteAdditionalData.getBase();
 
 		const credentialType = (credential as unknown as ICredentialsEncrypted).type;
 
@@ -226,7 +226,7 @@ oauth2CredentialController.get(
 			}
 
 			const encryptionKey = await UserSettings.getEncryptionKey();
-			const additionalData = await WorkflowExecuteAdditionalData.getBase(state.cid);
+			const additionalData = await WorkflowExecuteAdditionalData.getBase();
 
 			const mode: WorkflowExecuteMode = 'internal';
 			const credentialsHelper = new CredentialsHelper(encryptionKey);

@@ -12,8 +12,6 @@ import { ActiveExecutions } from '@/ActiveExecutions';
 import * as Db from '@/Db';
 import { WorkflowRunner } from '@/WorkflowRunner';
 import type { IWorkflowDb, IWorkflowExecutionDataProcess } from '@/Interfaces';
-import type { User } from '@db/entities/User';
-import { getInstanceOwner } from '@/UserManagement/UserManagementHelper';
 import { findCliWorkflowStart } from '@/utils';
 import { BaseCommand } from './BaseCommand';
 import { Container } from 'typedi';
@@ -47,8 +45,6 @@ export class ExecuteBatch extends BaseCommand {
 	static debug = false;
 
 	static executionTimeout = 3 * 60 * 1000;
-
-	static instanceOwner: User;
 
 	static examples = [
 		'$ n8n executeBatch',
@@ -275,8 +271,6 @@ export class ExecuteBatch extends BaseCommand {
 		if (flags.githubWorkflow) {
 			ExecuteBatch.githubWorkflow = true;
 		}
-
-		ExecuteBatch.instanceOwner = await getInstanceOwner();
 
 		const query = Db.collections.Workflow.createQueryBuilder('workflows');
 
@@ -641,7 +635,6 @@ export class ExecuteBatch extends BaseCommand {
 					executionMode: 'cli',
 					startNodes: [startingNode.name],
 					workflowData,
-					userId: ExecuteBatch.instanceOwner.id,
 				};
 
 				const workflowRunner = new WorkflowRunner();

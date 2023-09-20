@@ -1774,7 +1774,6 @@ export interface IWorkflowExecuteAdditionalData {
 	webhookTestBaseUrl: string;
 	currentNodeParameters?: INodeParameters;
 	executionTimeoutTimestamp?: number;
-	userId: string;
 	variables: IDataObject;
 	secretsHelpers: SecretsHelpersBase;
 }
