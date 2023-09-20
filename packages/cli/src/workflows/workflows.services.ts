@@ -25,8 +25,7 @@ import { TagService } from '@/services/tag.service';
 import type { IWorkflowDb, IWorkflowExecutionDataProcess } from '@/Interfaces';
 import { NodeTypes } from '@/NodeTypes';
 import { WorkflowRunner } from '@/WorkflowRunner';
-import * as WorkflowExecuteAdditionalData from '@/WorkflowExecuteAdditionalData';
-import { TestWebhooks } from '@/TestWebhooks';
+import { TestWebhooks } from '@/webhooks';
 import { whereClause } from '@/UserManagement/UserManagementHelper';
 import { InternalHooks } from '@/InternalHooks';
 import { WorkflowRepository } from '@/databases/repositories';
@@ -362,7 +361,7 @@ export class WorkflowsService {
 			destinationNode,
 		}: WorkflowRequest.ManualRunPayload,
 		user: User,
-		sessionId?: string,
+		sessionId: string,
 	) {
 		const EXECUTION_MODE = 'manual';
 		const ACTIVATION_MODE = 'manual';
@@ -377,23 +376,9 @@ export class WorkflowsService {
 				startNodes.length === 0 ||
 				destinationNode === undefined)
 		) {
-			const workflow = new Workflow({
-				id: workflowData.id?.toString(),
-				name: workflowData.name,
-				nodes: workflowData.nodes,
-				connections: workflowData.connections,
-				active: false,
-				nodeTypes: Container.get(NodeTypes),
-				staticData: undefined,
-				settings: workflowData.settings,
-			});
-
-			const additionalData = await WorkflowExecuteAdditionalData.getBase(user.id);
-
 			const needsWebhook = await Container.get(TestWebhooks).needsWebhookData(
+				user.id,
 				workflowData,
-				workflow,
-				additionalData,
 				EXECUTION_MODE,
 				ACTIVATION_MODE,
 				sessionId,

@@ -1,4 +1,3 @@
-import type express from 'express';
 import type {
 	ExecutionError,
 	INode,
@@ -33,13 +32,6 @@ export function getBaseUrl(): string {
 		return `${protocol}://${host}${path}`;
 	}
 	return `${protocol}://${host}:${port}${path}`;
-}
-
-/**
- * Returns the session id if one is set
- */
-export function getSessionId(req: express.Request): string | undefined {
-	return req.headers.sessionid as string | undefined;
 }
 
 /**

@@ -15,9 +15,7 @@ import type { IExternalHooksClass } from '@/Interfaces';
 import { ExternalHooks } from '@/ExternalHooks';
 import { send, sendErrorResponse, ServiceUnavailableError } from '@/ResponseHelper';
 import { rawBodyReader, bodyParser, corsMiddleware } from '@/middlewares';
-import { TestWebhooks } from '@/TestWebhooks';
-import { WaitingWebhooks } from '@/WaitingWebhooks';
-import { webhookRequestHandler } from '@/WebhookHelpers';
+import { ActiveWebhooks, TestWebhooks, WaitingWebhooks } from '@/webhooks';
 import { generateHostInstanceId } from './databases/utils/generators';
 import { OrchestrationService } from './services/orchestration.service';
 
@@ -167,15 +165,12 @@ export abstract class AbstractServer {
 		// Setup webhook handlers before bodyParser, to let the Webhook node handle binary data in requests
 		if (this.webhooksEnabled) {
 			// Register a handler for active webhooks
-			this.app.all(
-				`/${this.endpointWebhook}/:path(*)`,
-				webhookRequestHandler(Container.get(ActiveWorkflowRunner)),
-			);
+			Container.get(ActiveWebhooks).registerHandler(this.app, `/${this.endpointWebhook}/:path(*)`);
 
 			// Register a handler for waiting webhooks
-			this.app.all(
+			Container.get(WaitingWebhooks).registerHandler(
+				this.app,
 				`/${this.endpointWebhookWaiting}/:path/:suffix?`,
-				webhookRequestHandler(Container.get(WaitingWebhooks)),
 			);
 		}
 
@@ -183,7 +178,7 @@ export abstract class AbstractServer {
 			const testWebhooks = Container.get(TestWebhooks);
 
 			// Register a handler for test webhooks
-			this.app.all(`/${this.endpointWebhookTest}/:path(*)`, webhookRequestHandler(testWebhooks));
+			testWebhooks.registerHandler(this.app, `/${this.endpointWebhookTest}/:path(*)`);
 
 			// Removes a test webhook
 			// TODO UM: check if this needs validation with user management.

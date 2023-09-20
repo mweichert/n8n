@@ -292,6 +292,6 @@ workflowsController.delete(
 workflowsController.post(
 	'/run',
 	ResponseHelper.send(async (req: WorkflowRequest.ManualRun): Promise<IExecutionPushResponse> => {
-		return WorkflowsService.runManually(req.body, req.user, GenericHelpers.getSessionId(req));
+		return WorkflowsService.runManually(req.body, req.user, req.headers.sessionid as string);
 	}),
 );

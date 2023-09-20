@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { Service } from 'typedi';
 import { ActiveWorkflows, NodeExecuteFunctions } from 'n8n-core';
 
@@ -21,30 +20,21 @@ import type {
 	WorkflowActivateMode,
 	WorkflowExecuteMode,
 	INodeType,
-	IWebhookData,
 } from 'n8n-workflow';
 import {
-	NodeHelpers,
 	Workflow,
 	WorkflowActivationError,
 	LoggerProxy as Logger,
 	ErrorReporterProxy as ErrorReporter,
 } from 'n8n-workflow';
 
-import type express from 'express';
-
 import * as Db from '@/Db';
 import type {
 	IActivationError,
 	IQueuedWorkflowActivations,
-	IResponseCallbackData,
-	IWebhookManager,
 	IWorkflowDb,
 	IWorkflowExecutionDataProcess,
-	WebhookRequest,
 } from '@/Interfaces';
-import * as ResponseHelper from '@/ResponseHelper';
-import * as WebhookHelpers from '@/WebhookHelpers';
 import * as WorkflowExecuteAdditionalData from '@/WorkflowExecuteAdditionalData';
 
 import config from '@/config';
@@ -62,27 +52,21 @@ import { WorkflowRunner } from '@/WorkflowRunner';
 import { ExternalHooks } from '@/ExternalHooks';
 import { whereClause } from './UserManagement/UserManagementHelper';
 import { WorkflowsService } from './workflows/workflows.services';
-import { webhookNotFoundErrorMessage } from './utils';
 import { In } from 'typeorm';
 import { WebhookService } from './services/webhook.service';
-
-const WEBHOOK_PROD_UNREGISTERED_HINT =
-	"The workflow must be active for a production URL to run successfully. You can activate the workflow using the toggle in the top-right of the editor. Note that unlike test URL calls, production URL calls aren't shown on the canvas (only in the executions list)";
+import { ActiveWebhooks } from '@/webhooks';
 
 @Service()
-export class ActiveWorkflowRunner implements IWebhookManager {
+export class ActiveWorkflowRunner {
 	private activeWorkflows = new ActiveWorkflows();
 
-	private activationErrors: {
-		[key: string]: IActivationError;
-	} = {};
+	private activationErrors: Record<string, IActivationError> = {};
 
-	private queuedWorkflowActivations: {
-		[key: string]: IQueuedWorkflowActivations;
-	} = {};
+	private queuedWorkflowActivations: Record<string, IQueuedWorkflowActivations> = {};
 
 	constructor(
 		private activeExecutions: ActiveExecutions,
+		private activeWebhooks: ActiveWebhooks,
 		private externalHooks: ExternalHooks,
 		private nodeTypes: NodeTypes,
 		private webhookService: WebhookService,
@@ -182,119 +166,6 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 	}
 
 	/**
-	 * Checks if a webhook for the given method and path exists and executes the workflow.
-	 */
-	async executeWebhook(
-		request: WebhookRequest,
-		response: express.Response,
-	): Promise<IResponseCallbackData> {
-		const httpMethod = request.method;
-		let path = request.params.path;
-
-		Logger.debug(`Received webhook "${httpMethod}" for path "${path}"`);
-
-		// Reset request parameters
-		request.params = {} as WebhookRequest['params'];
-
-		// Remove trailing slash
-		if (path.endsWith('/')) {
-			path = path.slice(0, -1);
-		}
-
-		const webhook = await this.webhookService.findWebhook(httpMethod, path);
-
-		if (webhook === null) {
-			throw new ResponseHelper.NotFoundError(
-				webhookNotFoundErrorMessage(path, httpMethod),
-				WEBHOOK_PROD_UNREGISTERED_HINT,
-			);
-		}
-
-		if (webhook.isDynamic) {
-			const pathElements = path.split('/').slice(1);
-
-			// extracting params from path
-			// @ts-ignore
-			webhook.webhookPath.split('/').forEach((ele, index) => {
-				if (ele.startsWith(':')) {
-					// write params to req.params
-					// @ts-ignore
-					request.params[ele.slice(1)] = pathElements[index];
-				}
-			});
-		}
-
-		const workflowData = await Db.collections.Workflow.findOne({
-			where: { id: webhook.workflowId },
-			relations: ['shared', 'shared.user', 'shared.user.globalRole'],
-		});
-
-		if (workflowData === null) {
-			throw new ResponseHelper.NotFoundError(
-				`Could not find workflow with id "${webhook.workflowId}"`,
-			);
-		}
-
-		const workflow = new Workflow({
-			id: webhook.workflowId,
-			name: workflowData.name,
-			nodes: workflowData.nodes,
-			connections: workflowData.connections,
-			active: workflowData.active,
-			nodeTypes: this.nodeTypes,
-			staticData: workflowData.staticData,
-			settings: workflowData.settings,
-		});
-
-		const additionalData = await WorkflowExecuteAdditionalData.getBase(
-			workflowData.shared[0].user.id,
-		);
-
-		const webhookData = NodeHelpers.getNodeWebhooks(
-			workflow,
-			workflow.getNode(webhook.node) as INode,
-			additionalData,
-		).find((w) => w.httpMethod === httpMethod && w.path === webhook.webhookPath) as IWebhookData;
-
-		// Get the node which has the webhook defined to know where to start from and to
-		// get additional data
-		const workflowStartNode = workflow.getNode(webhookData.node);
-
-		if (workflowStartNode === null) {
-			throw new ResponseHelper.NotFoundError('Could not find node to process webhook.');
-		}
-
-		return new Promise((resolve, reject) => {
-			const executionMode = 'webhook';
-			void WebhookHelpers.executeWebhook(
-				workflow,
-				webhookData,
-				workflowData,
-				workflowStartNode,
-				executionMode,
-				undefined,
-				undefined,
-				undefined,
-				request,
-				response,
-				(error: Error | null, data: object) => {
-					if (error !== null) {
-						return reject(error);
-					}
-					resolve(data);
-				},
-			);
-		});
-	}
-
-	/**
-	 * Gets all request methods associated with a single webhook
-	 */
-	async getWebhookMethods(path: string) {
-		return this.webhookService.getWebhookMethods(path);
-	}
-
-	/**
 	 * Returns the ids of the currently active workflows
 	 */
 	async getActiveWorkflows(user?: User): Promise<string[]> {
@@ -363,7 +234,12 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 		mode: WorkflowExecuteMode,
 		activation: WorkflowActivateMode,
 	): Promise<void> {
-		const webhooks = WebhookHelpers.getWorkflowWebhooks(workflow, additionalData, undefined, true);
+		const webhooks = this.activeWebhooks.getWorkflowWebhooks(
+			workflow,
+			additionalData,
+			undefined,
+			true,
+		);
 		let path = '' as string | undefined;
 
 		for (const webhookData of webhooks) {
@@ -448,8 +324,8 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 
 	/**
 	 * Remove all the webhooks of the workflow
-	 *
 	 */
+	// TODO: move to ActiveWebhooks
 	async removeWorkflowWebhooks(workflowId: string): Promise<void> {
 		const workflowData = await Db.collections.Workflow.findOne({
 			where: { id: workflowId },
@@ -476,7 +352,12 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 			workflowData.shared[0].user.id,
 		);
 
-		const webhooks = WebhookHelpers.getWorkflowWebhooks(workflow, additionalData, undefined, true);
+		const webhooks = this.activeWebhooks.getWorkflowWebhooks(
+			workflow,
+			additionalData,
+			undefined,
+			true,
+		);
 
 		for (const webhookData of webhooks) {
 			await workflow.deleteWebhook(webhookData, NodeExecuteFunctions, mode, 'update', false);
@@ -489,9 +370,7 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 
 	/**
 	 * Runs the given workflow
-	 *
 	 */
-
 	async runWorkflow(
 		workflowData: IWorkflowDb,
 		node: INode,
@@ -538,7 +417,6 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 	/**
 	 * Return poll function which gets the global functions from n8n-core
 	 * and overwrites the emit to be able to start it in subprocess
-	 *
 	 */
 	getExecutePollFunctions(
 		workflowData: IWorkflowDb,
@@ -594,7 +472,6 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 	/**
 	 * Return trigger function which gets the global functions from n8n-core
 	 * and overwrites the emit to be able to start it in subprocess
-	 *
 	 */
 	getExecuteTriggerFunctions(
 		workflowData: IWorkflowDb,
@@ -695,10 +572,8 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 
 	/**
 	 * Makes a workflow active
-	 *
-	 * @param {string} workflowId The id of the workflow to activate
-	 * @param {IWorkflowDb} [workflowData] If workflowData is given it saves the DB query
 	 */
+	// TODO: move to ActiveWebhooks
 	async add(
 		workflowId: string,
 		activation: WorkflowActivateMode,
@@ -793,7 +668,7 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 				const triggerCount =
 					workflowInstance.queryNodes(triggerFilter).length +
 					workflowInstance.getPollNodes().length +
-					WebhookHelpers.getWorkflowWebhooks(workflowInstance, additionalData, undefined, true)
+					this.activeWebhooks.getWorkflowWebhooks(workflowInstance, additionalData, undefined, true)
 						.length;
 				await WorkflowsService.updateWorkflowTriggerCount(workflowInstance.id, triggerCount);
 			}

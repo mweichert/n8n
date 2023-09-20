@@ -261,6 +261,6 @@ EEWorkflowController.post(
 			req.body.workflowData.nodes = safeWorkflow.nodes;
 		}
 
-		return EEWorkflows.runManually(req.body, req.user, GenericHelpers.getSessionId(req));
+		return EEWorkflows.runManually(req.body, req.user, req.headers.sessionid as string);
 	}),
 );
