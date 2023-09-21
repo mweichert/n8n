@@ -43,6 +43,10 @@
 			</template>
 		</ModalRoot>
 
+		<ModalRoot :name="WORKFLOW_LM_CHAT_MODAL_KEY">
+			<WorkflowLMChat />
+		</ModalRoot>
+
 		<ModalRoot :name="WORKFLOW_SETTINGS_MODAL_KEY">
 			<WorkflowSettings />
 		</ModalRoot>
@@ -153,6 +157,7 @@ import {
 	VALUE_SURVEY_MODAL_KEY,
 	VERSIONS_MODAL_KEY,
 	WORKFLOW_ACTIVE_MODAL_KEY,
+	WORKFLOW_LM_CHAT_MODAL_KEY,
 	WORKFLOW_SETTINGS_MODAL_KEY,
 	WORKFLOW_SHARE_MODAL_KEY,
 	IMPORT_CURL_MODAL_KEY,
@@ -179,6 +184,7 @@ import PersonalizationModal from './PersonalizationModal.vue';
 import TagsManager from './TagsManager/TagsManager.vue';
 import UpdatesPanel from './UpdatesPanel.vue';
 import ValueSurvey from './ValueSurvey.vue';
+import WorkflowLMChat from './WorkflowLMChat.vue';
 import WorkflowSettings from './WorkflowSettings.vue';
 import DeleteUserModal from './DeleteUserModal.vue';
 import ActivationModal from './ActivationModal.vue';
@@ -211,6 +217,7 @@ export default defineComponent({
 		TagsManager,
 		UpdatesPanel,
 		ValueSurvey,
+		WorkflowLMChat,
 		WorkflowSettings,
 		WorkflowShareModal,
 		ImportCurlModal,
@@ -236,6 +243,7 @@ export default defineComponent({
 		INVITE_USER_MODAL_KEY,
 		TAGS_MANAGER_MODAL_KEY,
 		VERSIONS_MODAL_KEY,
+		WORKFLOW_LM_CHAT_MODAL_KEY,
 		WORKFLOW_SETTINGS_MODAL_KEY,
 		WORKFLOW_SHARE_MODAL_KEY,
 		VALUE_SURVEY_MODAL_KEY,

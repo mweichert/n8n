@@ -517,6 +517,7 @@ export class ActiveWorkflowRunner implements IWebhookManager {
 			},
 			executionData: {
 				contextData: {},
+				metadata: {},
 				nodeExecutionStack,
 				waitingExecution: {},
 				waitingExecutionSource: {},

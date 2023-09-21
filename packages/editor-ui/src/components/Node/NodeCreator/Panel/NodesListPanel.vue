@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, watch } from 'vue';
 import type { INodeCreateElement } from '@/Interface';
-import { TRIGGER_NODE_CREATOR_VIEW } from '@/constants';
+import {
+	AI_NODE_CREATOR_VIEW,
+	REGULAR_NODE_CREATOR_VIEW,
+	TRIGGER_NODE_CREATOR_VIEW,
+} from '@/constants';
 
 import { useNodeCreatorStore } from '@/stores/nodeCreator.store';
 
-import { TriggerView, RegularView } from '../viewsData';
+import { TriggerView, RegularView, AIView } from '../viewsData';
 import { useViewStacks } from '../composables/useViewStacks';
 import { useKeyboardNavigation } from '../composables/useKeyboardNavigation';
 import SearchBar from './SearchBar.vue';
@@ -59,7 +63,20 @@ onUnmounted(() => {
 watch(
 	() => nodeCreatorView.value,
 	(selectedView) => {
-		const view = selectedView === TRIGGER_NODE_CREATOR_VIEW ? TriggerView() : RegularView();
+		const views = {
+			[TRIGGER_NODE_CREATOR_VIEW]: TriggerView,
+			[REGULAR_NODE_CREATOR_VIEW]: RegularView,
+			[AI_NODE_CREATOR_VIEW]: AIView,
+		};
+
+		const itemKey = selectedView;
+		const matchedView = views[itemKey];
+
+		if (!matchedView) {
+			console.warn(`No view found for ${itemKey}`);
+			return;
+		}
+		const view = matchedView(mergedNodes);
 
 		pushViewStack({
 			title: view.title,
@@ -86,13 +103,25 @@ function onBackButton() {
 		:name="`panel-slide-${activeViewStack.transitionDirection}`"
 		@afterLeave="onTransitionEnd"
 	>
-		<aside :class="$style.nodesListPanel" @keydown.capture.stop :key="`${activeViewStack.uuid}`">
+		<aside
+			:class="[$style.nodesListPanel, activeViewStack.panelClass]"
+			@keydown.capture.stop
+			:key="`${activeViewStack.uuid}`"
+		>
 			<header
-				:class="{ [$style.header]: true, [$style.hasBg]: !activeViewStack.subtitle }"
+				:class="{
+					[$style.header]: true,
+					[$style.hasBg]: !activeViewStack.subtitle,
+					'nodes-list-panel-header': true,
+				}"
 				data-test-id="nodes-list-header"
 			>
 				<div :class="$style.top">
-					<button :class="$style.backButton" @click="onBackButton" v-if="viewStacks.length > 1">
+					<button
+						:class="$style.backButton"
+						@click="onBackButton"
+						v-if="viewStacks.length > 1 && !activeViewStack.preventBack"
+					>
 						<font-awesome-icon :class="$style.backButtonIcon" icon="arrow-left" size="2x" />
 					</button>
 					<n8n-node-icon
@@ -104,7 +133,7 @@ function onBackButton() {
 						:color="activeViewStack.nodeIcon.color"
 						:circle="false"
 						:showTooltip="false"
-						:size="16"
+						:size="20"
 					/>
 					<p :class="$style.title" v-text="activeViewStack.title" v-if="activeViewStack.title" />
 				</div>
@@ -173,7 +202,7 @@ function onBackButton() {
 	padding: 0;
 }
 .nodeIcon {
-	--node-icon-size: 16px;
+	--node-icon-size: 20px;
 	margin-right: var(--spacing-s);
 }
 .renderedItems {
@@ -252,5 +281,17 @@ function onBackButton() {
 }
 .offsetSubtitle {
 	margin-left: calc(var(--spacing-xl) + var(--spacing-4xs));
+}
+</style>
+
+<style lang="scss">
+@each $node-type in $supplemental-node-types {
+	.nodes-list-panel-#{$node-type} .nodes-list-panel-header {
+		color: var(--node-type-#{$node-type}-color);
+
+		.n8n-node-icon svg {
+			color: var(--node-type-#{$node-type}-color);
+		}
+	}
 }
 </style>

@@ -571,6 +571,7 @@ export interface IN8nRequestOperationPaginationOffset extends IN8nRequestOperati
 }
 
 export interface IGetNodeParameterOptions {
+	contextNode?: INode;
 	// extract value from regex, works only when parameter type is resourceLocator
 	extractValue?: boolean;
 	// get raw value of parameter with unresolved expressions
@@ -762,16 +763,34 @@ type BaseExecutionFunctions = FunctionsBaseWithRequiredKeys<'getMode'> & {
 	getInputSourceData(inputIndex?: number, inputName?: string): ISourceData;
 };
 
+// TODO: Create later own type only for Config-Nodes
 export type IExecuteFunctions = ExecuteFunctions.GetNodeParameterFn &
 	BaseExecutionFunctions & {
 		executeWorkflow(
 			workflowInfo: IExecuteWorkflowInfo,
 			inputData?: INodeExecutionData[],
 		): Promise<any>;
+		getInputConnectionData(
+			inputName: ConnectionTypes,
+			itemIndex: number,
+			inputIndex?: number,
+			nodeNameOverride?: string,
+		): Promise<unknown>;
 		getInputData(inputIndex?: number, inputName?: string): INodeExecutionData[];
+		getNodeOutputs(): INodeOutputConfiguration[];
 		putExecutionToWait(waitTill: Date): Promise<void>;
 		sendMessageToUI(message: any): void;
 		sendResponse(response: IExecuteResponsePromiseData): void;
+
+		// TODO: Make this one then only available in the new config one
+		addInputData(
+			connectionType: ConnectionTypes,
+			data: INodeExecutionData[][] | ExecutionError,
+		): void;
+		addOutputData(
+			connectionType: ConnectionTypes,
+			data: INodeExecutionData[][] | ExecutionError,
+		): void;
 
 		nodeHelpers: NodeHelperFunctions;
 		helpers: RequestHelperFunctions &
@@ -1258,8 +1277,14 @@ export namespace MultiPartFormData {
 	>;
 }
 
+export interface SupplyData {
+	metadata?: IDataObject;
+	response: unknown;
+}
+
 export interface INodeType {
 	description: INodeTypeDescription;
+	supplyData?(this: IExecuteFunctions): Promise<SupplyData>;
 	execute?(
 		this: IExecuteFunctions,
 	): Promise<INodeExecutionData[][] | NodeExecutionWithMetadata[][] | null>;
@@ -1326,7 +1351,7 @@ export interface INodeCredentialDescription {
 	testedBy?: ICredentialTestRequest | string; // Name of a function inside `loadOptions.credentialTest`
 }
 
-export type INodeIssueTypes = 'credentials' | 'execution' | 'parameters' | 'typeUnknown';
+export type INodeIssueTypes = 'credentials' | 'execution' | 'input' | 'parameters' | 'typeUnknown';
 
 export interface INodeIssueObjectProperty {
 	[key: string]: string[];
@@ -1341,6 +1366,7 @@ export interface INodeIssueData {
 export interface INodeIssues {
 	execution?: boolean;
 	credentials?: INodeIssueObjectProperty;
+	input?: INodeIssueObjectProperty;
 	parameters?: INodeIssueObjectProperty;
 	typeUnknown?: boolean;
 	[key: string]: undefined | boolean | INodeIssueObjectProperty;
@@ -1468,15 +1494,49 @@ export interface IPostReceiveSort extends IPostReceiveBase {
 	};
 }
 
+export type ConnectionTypes =
+	| 'chain'
+	| 'document'
+	| 'embedding'
+	| 'languageModel'
+	| 'main'
+	| 'memory'
+	| 'outputParser'
+	| 'tool'
+	| 'textSplitter'
+	| 'vectorRetriever'
+	| 'vectorStore';
+
+export interface INodeInputFilter {
+	// TODO: Later add more filter options like categories, subcatogries,
+	//       regex, allow to exclude certain nodes, ... ?
+	//       Potentially change totally after alpha/beta. Is not a breaking change after all.
+	nodes: string[]; // Allowed nodes
+}
+
+export interface INodeInputConfiguration {
+	displayName?: string;
+	maxConnections?: number;
+	required?: boolean;
+	filter?: INodeInputFilter;
+	type: ConnectionTypes;
+}
+
+export interface INodeOutputConfiguration {
+	displayName?: string;
+	required?: boolean;
+	type: ConnectionTypes;
+}
+
 export interface INodeTypeDescription extends INodeTypeBaseDescription {
 	version: number | number[];
 	defaults: INodeParameters;
 	eventTriggerDescription?: string;
 	activationMessage?: string;
-	inputs: string[];
+	inputs: Array<ConnectionTypes | INodeInputConfiguration> | string;
 	requiredInputs?: string | number[] | number; // Ony available with executionOrder => "v1"
 	inputNames?: string[];
-	outputs: string[];
+	outputs: Array<ConnectionTypes | INodeInputConfiguration> | string;
 	outputNames?: string[];
 	properties: INodeProperties[];
 	credentials?: INodeCredentialDescription[];
@@ -1657,6 +1717,10 @@ export interface IRunExecutionData {
 	executionData?: {
 		contextData: IExecuteContextData;
 		nodeExecutionStack: IExecuteData[];
+		metadata: {
+			// node-name: metadata by runIndex
+			[key: string]: ITaskMetadata[];
+		};
 		waitingExecution: IWaitingForExecution;
 		waitingExecutionSource: IWaitingForExecutionSource | null;
 	};
@@ -1668,14 +1732,25 @@ export interface IRunData {
 	[key: string]: ITaskData[];
 }
 
+export interface ITaskAIRunMetadata {
+	node: string;
+	runIndex: number;
+}
+
+export interface ITaskMetadata {
+	aiRun?: ITaskAIRunMetadata[];
+}
+
 // The data that gets returned when a node runs
 export interface ITaskData {
 	startTime: number;
 	executionTime: number;
 	executionStatus?: ExecutionStatus;
 	data?: ITaskDataConnections;
+	inputOverride?: ITaskDataConnections;
 	error?: ExecutionError;
 	source: Array<ISourceData | null>; // Is an array as nodes have multiple inputs
+	metadata?: ITaskMetadata;
 }
 
 export interface ISourceData {
@@ -1771,7 +1846,7 @@ export interface IWorkflowExecuteAdditionalData {
 	restApiUrl: string;
 	instanceBaseUrl: string;
 	setExecutionStatus?: (status: ExecutionStatus) => void;
-	sendMessageToUI?: (source: string, message: any) => void;
+	sendDataToUI?: (type: string, data: IDataObject | IDataObject[]) => void;
 	timezone: string;
 	webhookBaseUrl: string;
 	webhookWaitingBaseUrl: string;

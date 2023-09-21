@@ -1,8 +1,13 @@
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { v4 as uuid } from 'uuid';
-import type { INodeCreateElement, NodeFilterType, SimplifiedNodeType } from '@/Interface';
-import { DEFAULT_SUBCATEGORY, TRIGGER_NODE_CREATOR_VIEW } from '@/constants';
+import type {
+	NodeConnectionType,
+	INodeCreateElement,
+	NodeFilterType,
+	SimplifiedNodeType,
+} from '@/Interface';
+import { AI_NODE_CREATOR_VIEW, DEFAULT_SUBCATEGORY, TRIGGER_NODE_CREATOR_VIEW } from '@/constants';
 
 import { useNodeCreatorStore } from '@/stores/nodeCreator.store';
 
@@ -13,6 +18,11 @@ import {
 	sortNodeCreateElements,
 	searchNodes,
 } from '../utils';
+import { ConnectionTypes, INodeInputFilter, INodeTypeDescription } from 'n8n-workflow';
+import { useNodeTypesStore } from '@/stores';
+import { useI18n } from '@/composables';
+import { BaseTextKey } from '@/plugins/i18n';
+import { AIView } from '@/components/Node/NodeCreator/viewsData';
 
 interface ViewStack {
 	uuid?: string;
@@ -30,6 +40,7 @@ interface ViewStack {
 	activeIndex?: number;
 	transitionDirection?: 'in' | 'out';
 	hasSearch?: boolean;
+	preventBack?: boolean;
 	items?: INodeCreateElement[];
 	baselineItems?: INodeCreateElement[];
 	searchItems?: SimplifiedNodeType[];
@@ -37,6 +48,7 @@ interface ViewStack {
 	mode?: 'actions' | 'nodes';
 	baseFilter?: (item: INodeCreateElement) => boolean;
 	itemsMapper?: (item: INodeCreateElement) => INodeCreateElement;
+	panelClass?: string;
 }
 
 export const useViewStacks = defineStore('nodeCreatorViewStacks', () => {
@@ -96,13 +108,48 @@ export const useViewStacks = defineStore('nodeCreatorViewStacks', () => {
 		});
 	});
 
+	async function gotoCompatibleConnectionView(
+		connectionType: NodeConnectionType,
+		filter?: INodeInputFilter,
+	) {
+		const nodesByOutputType = useNodeTypesStore().visibleNodeTypesByOutputConnectionTypeNames;
+		const relatedAIView = AIView([]).items.find(
+			(item) => item.properties.connectionType === connectionType,
+		);
+
+		await nextTick();
+		pushViewStack({
+			title: relatedAIView?.properties.title,
+			rootView: AI_NODE_CREATOR_VIEW,
+			mode: 'nodes',
+			items: nodeCreatorStore.allNodeCreatorNodes,
+			nodeIcon: {
+				iconType: 'icon',
+				icon: relatedAIView?.properties.icon,
+				color: relatedAIView?.properties.iconProps?.color,
+			},
+			panelClass: relatedAIView?.properties.panelClass,
+			baseFilter: (i: INodeCreateElement) => {
+				const displayNode = nodesByOutputType[connectionType].includes(i.key);
+
+				if (displayNode && filter?.nodes?.length) {
+					return filter.nodes.includes(i.key);
+				}
+
+				return displayNode;
+			},
+			preventBack: true,
+		});
+	}
+
 	function setStackBaselineItems() {
 		const stack = viewStacks.value[viewStacks.value.length - 1];
 		if (!stack || !activeViewStack.value.uuid) return;
 
-		const subcategorizedItems = subcategorizeItems(nodeCreatorStore.mergedNodes);
 		let stackItems =
-			stack?.items ?? subcategorizedItems[stack?.subcategory ?? DEFAULT_SUBCATEGORY] ?? [];
+			stack?.items ??
+			subcategorizeItems(nodeCreatorStore.mergedNodes)[stack?.subcategory ?? DEFAULT_SUBCATEGORY] ??
+			[];
 
 		// Ensure that the nodes specified in `stack.forceIncludeNodes` are always included,
 		// regardless of whether the subcategory is matched
@@ -183,6 +230,7 @@ export const useViewStacks = defineStore('nodeCreatorViewStacks', () => {
 		activeViewStack,
 		activeViewStackMode,
 		globalSearchItemsDiff,
+		gotoCompatibleConnectionView,
 		resetViewStacks,
 		updateCurrentViewStack,
 		pushViewStack,

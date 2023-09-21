@@ -10,7 +10,7 @@
 		:executingMessage="$locale.baseText('ndv.input.executingPrevious')"
 		:sessionId="sessionId"
 		:overrideOutputs="connectedCurrentNodeOutputs"
-		:mappingEnabled="!readOnly"
+		:mappingEnabled="isMappingEnabled"
 		:distanceFromActive="currentNodeDepth"
 		:isProductionExecutionPreview="isProductionExecutionPreview"
 		paneType="input"
@@ -130,7 +130,13 @@
 import { defineComponent } from 'vue';
 import { mapStores } from 'pinia';
 import type { INodeUi } from '@/Interface';
-import type { IConnectedNode, INodeTypeDescription, Workflow } from 'n8n-workflow';
+import {
+	NodeHelpers,
+	type IConnectedNode,
+	type INodeTypeDescription,
+	type Workflow,
+	ConnectionTypes,
+} from 'n8n-workflow';
 import RunData from './RunData.vue';
 import { workflowHelpers } from '@/mixins/workflowHelpers';
 import NodeExecuteButton from './NodeExecuteButton.vue';
@@ -201,23 +207,53 @@ export default defineComponent({
 
 			return !!this.focusedMappableInput && !this.isUserOnboarded;
 		},
+		isActiveNodeConfig(): boolean {
+			let inputs = this.activeNodeType?.inputs ?? [];
+			let outputs = this.activeNodeType?.outputs ?? [];
+			if (this.activeNode !== null && this.currentWorkflow !== null) {
+				const node = this.currentWorkflow.getNode(this.activeNode.name);
+				inputs = NodeHelpers.getNodeInputs(this.currentWorkflow, node!, this.activeNodeType!);
+				outputs = NodeHelpers.getNodeOutputs(this.currentWorkflow, node!, this.activeNodeType!);
+			} else {
+				// If we can not figure out the node type we set no outputs
+				if (!Array.isArray(inputs)) {
+					inputs = [] as ConnectionTypes[];
+				}
+				if (!Array.isArray(outputs)) {
+					outputs = [] as ConnectionTypes[];
+				}
+			}
+
+			if (
+				(inputs.length === 0 || inputs.find((inputName) => inputName !== 'main')) &&
+				outputs.find((outputName) => outputName !== 'main')
+			) {
+				return true;
+			}
+
+			return false;
+		},
+		isMappingEnabled(): boolean {
+			return !this.readOnly && !this.isActiveNodeConfig;
+		},
 		isExecutingPrevious(): boolean {
 			if (!this.workflowRunning) {
 				return false;
 			}
 			const triggeredNode = this.workflowsStore.executedNode;
 			const executingNode = this.workflowsStore.executingNode;
+
 			if (
 				this.activeNode &&
 				triggeredNode === this.activeNode.name &&
-				this.activeNode.name !== executingNode
+				!this.workflowsStore.isNodeExecuting(this.activeNode.name)
 			) {
 				return true;
 			}
 
-			if (executingNode || triggeredNode) {
+			if (executingNode.length || triggeredNode) {
 				return !!this.parentNodes.find(
-					(node) => node.name === executingNode || node.name === triggeredNode,
+					(node) => this.workflowsStore.isNodeExecuting(node.name) || node.name === triggeredNode,
 				);
 			}
 			return false;
@@ -232,6 +268,13 @@ export default defineComponent({
 			return this.ndvStore.activeNode;
 		},
 		currentNode(): INodeUi | null {
+			if (this.isActiveNodeConfig) {
+				// For config nodes we want to return the active node to make everyhing
+				// work correctly as they normally do not have any inputs and the input
+				// data does get set manually and is only for debugging
+				return this.activeNode;
+			}
+
 			return this.workflowsStore.getNodeByName(this.currentNodeName);
 		},
 		connectedCurrentNodeOutputs(): number[] | undefined {

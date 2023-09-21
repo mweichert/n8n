@@ -1,4 +1,5 @@
 import type {
+	AI_NODE_CREATOR_VIEW,
 	CREDENTIAL_EDIT_MODAL_KEY,
 	SignInType,
 	FAKE_DOOR_FEATURES,
@@ -41,6 +42,7 @@ import type {
 	IUserSettings,
 	IN8nUISettings,
 	BannerName,
+	INodeExecutionData,
 	INodeProperties,
 } from 'n8n-workflow';
 import type { BulkCommand, Undoable } from '@/models/history';
@@ -111,6 +113,21 @@ export type EndpointStyle = {
 	hoverMessage?: string;
 };
 
+export const enum NodeConnectionType {
+	Agent = 'agent',
+	Chain = 'chain',
+	Main = 'main',
+	Tool = 'tool',
+	Memory = 'memory',
+	OutputParser = 'outputParser',
+	LanguageModel = 'languageModel',
+	VectorRetriever = 'vectorRetriever',
+	VectorStore = 'vectorStore',
+	Embedding = 'embedding',
+	Document = 'document',
+	TextSplitter = 'textSplitter',
+}
+
 export interface IUpdateInformation {
 	name: string;
 	key?: string;
@@ -162,6 +179,22 @@ export interface INodeTranslationHeaders {
 			description: string;
 		};
 	};
+}
+
+export interface IAiDataContent {
+	data: INodeExecutionData[] | null;
+	inOut: 'input' | 'output';
+	type: NodeConnectionType;
+	metadata: {
+		executionTime: number;
+		startTime: number;
+	};
+}
+
+export interface IAiData {
+	data: IAiDataContent[];
+	node: string;
+	runIndex: number;
 }
 
 export interface IStartRunData {
@@ -743,6 +776,10 @@ export interface SubcategoryItemProps {
 	description?: string;
 	iconType?: string;
 	icon?: string;
+	iconProps?: {
+		color?: string;
+	};
+	panelClass?: string;
 	title?: string;
 	subcategory?: string;
 	defaults?: INodeParameters;
@@ -888,7 +925,7 @@ export interface WorkflowsState {
 	activeWorkflowExecution: IExecutionsSummary | null;
 	currentWorkflowExecutions: IExecutionsSummary[];
 	activeExecutionId: string | null;
-	executingNode: string | null;
+	executingNode: string[];
 	executionWaitingForWebhook: boolean;
 	finishedExecutionsCount: number;
 	nodeMetadata: NodeMetadataMap;
@@ -936,7 +973,7 @@ export interface IRootState {
 	endpointWebhook: string;
 	endpointWebhookTest: string;
 	executionId: string | null;
-	executingNode: string | null;
+	executingNode: string[];
 	executionWaitingForWebhook: boolean;
 	pushConnectionActive: boolean;
 	saveDataErrorExecution: string;
@@ -1077,6 +1114,7 @@ export interface UIState {
 	stateIsDirty: boolean;
 	lastSelectedNode: string | null;
 	lastSelectedNodeOutputIndex: number | null;
+	lastSelectedNodeEndpointUuid: string | null;
 	nodeViewOffsetPosition: XYPosition;
 	nodeViewMoveInProgress: boolean;
 	selectedNodes: INodeUi[];
@@ -1106,12 +1144,16 @@ export type IFakeDoorLocation =
 	| 'credentialsModal'
 	| 'workflowShareModal';
 
-export type NodeFilterType = typeof REGULAR_NODE_CREATOR_VIEW | typeof TRIGGER_NODE_CREATOR_VIEW;
+export type NodeFilterType =
+	| typeof REGULAR_NODE_CREATOR_VIEW
+	| typeof TRIGGER_NODE_CREATOR_VIEW
+	| typeof AI_NODE_CREATOR_VIEW;
 
 export type NodeCreatorOpenSource =
 	| ''
 	| 'no_trigger_execution_tooltip'
 	| 'plus_endpoint'
+	| 'add_input_endpoint'
 	| 'trigger_placeholder_button'
 	| 'tab'
 	| 'node_connection_action'

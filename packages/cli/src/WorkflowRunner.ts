@@ -327,7 +327,7 @@ export class WorkflowRunner {
 				executionId,
 			});
 
-			additionalData.sendMessageToUI = WorkflowExecuteAdditionalData.sendMessageToUI.bind({
+			additionalData.sendDataToUI = WorkflowExecuteAdditionalData.sendDataToUI.bind({
 				sessionId: data.sessionId,
 			});
 
@@ -344,8 +344,7 @@ export class WorkflowRunner {
 			} else if (
 				data.runData === undefined ||
 				data.startNodes === undefined ||
-				data.startNodes.length === 0 ||
-				data.destinationNode === undefined
+				data.startNodes.length === 0
 			) {
 				Logger.debug(`Execution ID ${executionId} will run executing all nodes.`, { executionId });
 				// Execute all nodes
@@ -368,7 +367,7 @@ export class WorkflowRunner {
 					workflow,
 					data.runData,
 					data.startNodes,
-					data.destinationNode,
+					data.destinationNode!, // No idea why the ! is needed as both time it is optional
 					data.pinData,
 				);
 			}
@@ -736,11 +735,11 @@ export class WorkflowRunner {
 				if (responsePromise) {
 					responsePromise.resolve(WebhookHelpers.decodeWebhookResponse(message.data.response));
 				}
-			} else if (message.type === 'sendMessageToUI') {
+			} else if (message.type === 'sendDataToUI') {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-				WorkflowExecuteAdditionalData.sendMessageToUI.bind({ sessionId: data.sessionId })(
-					message.data.source,
-					message.data.message,
+				WorkflowExecuteAdditionalData.sendDataToUI.bind({ sessionId: data.sessionId })(
+					message.data.type,
+					message.data.data,
 				);
 			} else if (message.type === 'processError') {
 				clearTimeout(executionTimeout);
