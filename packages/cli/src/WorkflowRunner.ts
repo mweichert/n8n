@@ -37,7 +37,7 @@ import type {
 	IWorkflowExecutionDataProcessWithExecution,
 } from '@/Interfaces';
 import { NodeTypes } from '@/NodeTypes';
-import type { Job, JobData, JobQueue, JobResponse } from '@/Queue';
+import type { Job, JobData, JobResponse } from '@/Queue';
 // eslint-disable-next-line import/no-cycle
 import { Queue } from '@/Queue';
 import * as WebhookHelpers from '@/WebhookHelpers';
@@ -60,11 +60,14 @@ export class WorkflowRunner {
 
 	push: Push;
 
-	jobQueue: JobQueue;
+	queue: Queue;
 
 	constructor() {
 		this.push = Container.get(Push);
 		this.activeExecutions = Container.get(ActiveExecutions);
+		if (config.getEnv('executions.mode') === 'queue') {
+			this.queue = Container.get(Queue);
+		}
 	}
 
 	/**
@@ -170,11 +173,6 @@ export class WorkflowRunner {
 		const executionsProcess = config.getEnv('executions.process');
 
 		await initErrorHandling();
-
-		if (executionsMode === 'queue') {
-			const queue = Container.get(Queue);
-			this.jobQueue = queue.getBullObjectInstance();
-		}
 
 		if (executionsMode === 'queue' && data.executionMode !== 'manual') {
 			// Do not run "manual" executions in bull because sending events to the
@@ -450,7 +448,7 @@ export class WorkflowRunner {
 		let job: Job;
 		let hooks: WorkflowHooks;
 		try {
-			job = await this.jobQueue.add(jobData, jobOptions);
+			job = await this.queue.add(jobData, jobOptions);
 
 			console.log(`Started with job ID: ${job.id.toString()} (Execution ID: ${executionId})`);
 
@@ -523,7 +521,7 @@ export class WorkflowRunner {
 
 					const watchDog: Promise<JobResponse> = new Promise((res) => {
 						watchDogInterval = setInterval(async () => {
-							const currentJob = await this.jobQueue.getJob(job.id);
+							const currentJob = await this.queue.getJob(job.id);
 							// When null means job is finished (not found in queue)
 							if (currentJob === null) {
 								// Mimic worker's success message
