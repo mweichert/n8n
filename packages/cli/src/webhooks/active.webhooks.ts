@@ -12,6 +12,7 @@ import {
 	Workflow,
 	LoggerProxy as Logger,
 	ErrorReporterProxy as ErrorReporter,
+	WebhookPathAlreadyTakenError,
 } from 'n8n-workflow';
 import { NodeExecuteFunctions } from 'n8n-core';
 
@@ -203,7 +204,7 @@ export class ActiveWebhooks extends AbstractWebhooks {
 				}
 
 				try {
-					await this.removeWorkflowWebhooks(workflow.id as string);
+					await this.removeWorkflowWebhooks(workflow.id);
 				} catch (error1) {
 					ErrorReporter.error(error1);
 					Logger.error(
@@ -217,10 +218,7 @@ export class ActiveWebhooks extends AbstractWebhooks {
 				// TODO check if there is standard error code for duplicate key violation that works
 				// with all databases
 				if ((error as Error).name === 'QueryFailedError') {
-					error = new Error(
-						`The URL path that the "${webhook.node}" node uses is already taken. Please change it to something else.`,
-						{ cause: error },
-					);
+					throw new WebhookPathAlreadyTakenError(webhook.node);
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 				} else if (error.detail) {
 					// it's a error running the webhook methods (checkExists, create)

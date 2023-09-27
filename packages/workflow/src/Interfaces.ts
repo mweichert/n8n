@@ -48,12 +48,6 @@ export interface IBinaryData {
 	id?: string;
 }
 
-export interface BinaryMetadata {
-	fileName?: string;
-	mimeType?: string;
-	fileSize: number;
-}
-
 // All properties in this interface except for
 // "includeCredentialsOnRefreshOnBody" will get
 // removed once we add the OAuth2 hooks to the
@@ -691,8 +685,12 @@ export interface BinaryHelperFunctions {
 	copyBinaryFile(): Promise<never>;
 	binaryToBuffer(body: Buffer | Readable): Promise<Buffer>;
 	getBinaryPath(binaryDataId: string): string;
-	getBinaryStream(binaryDataId: string, chunkSize?: number): Readable;
-	getBinaryMetadata(binaryDataId: string): Promise<BinaryMetadata>;
+	getBinaryStream(binaryDataId: string, chunkSize?: number): Promise<Readable>;
+	getBinaryMetadata(binaryDataId: string): Promise<{
+		fileName?: string;
+		mimeType?: string;
+		fileSize: number;
+	}>;
 }
 
 export interface NodeHelperFunctions {
@@ -1813,6 +1811,10 @@ export interface IWorkflowSettings {
 	executionOrder?: 'v0' | 'v1';
 }
 
+export interface WorkflowFEMeta {
+	onboardingId?: string;
+}
+
 export interface WorkflowTestData {
 	description: string;
 	input: {
@@ -2112,6 +2114,8 @@ export interface IPublicApiSettings {
 
 export type ILogLevel = 'info' | 'debug' | 'warn' | 'error' | 'verbose' | 'silent';
 
+export type ExpressionEvaluatorType = 'tmpl' | 'tournament';
+
 export interface IN8nUISettings {
 	endpointWebhook: string;
 	endpointWebhookTest: string;
@@ -2130,6 +2134,7 @@ export interface IN8nUISettings {
 	urlBaseEditor: string;
 	versionCli: string;
 	n8nMetadata?: {
+		userId?: string;
 		[key: string]: string | number | undefined;
 	};
 	versionNotifications: IVersionNotificationSettings;
@@ -2198,6 +2203,9 @@ export interface IN8nUISettings {
 	variables: {
 		limit: number;
 	};
+	expressions: {
+		evaluator: ExpressionEvaluatorType;
+	};
 	mfa: {
 		enabled: boolean;
 	};
@@ -2220,4 +2228,9 @@ export interface SecretsHelpersBase {
 	listSecrets(provider: string): string[];
 }
 
-export type BannerName = 'V1' | 'TRIAL_OVER' | 'TRIAL' | 'NON_PRODUCTION_LICENSE';
+export type BannerName =
+	| 'V1'
+	| 'TRIAL_OVER'
+	| 'TRIAL'
+	| 'NON_PRODUCTION_LICENSE'
+	| 'EMAIL_CONFIRMATION';

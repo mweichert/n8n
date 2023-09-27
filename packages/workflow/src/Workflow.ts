@@ -65,7 +65,7 @@ interface Parameters {
 }
 
 export class Workflow {
-	id: string | undefined;
+	id: string;
 
 	name: string | undefined;
 
@@ -90,7 +90,7 @@ export class Workflow {
 	pinData?: IPinData;
 
 	constructor(parameters: Parameters) {
-		this.id = parameters.id;
+		this.id = parameters.id as string;
 		this.name = parameters.name;
 		this.nodeTypes = parameters.nodeTypes;
 		this.pinData = parameters.pinData;

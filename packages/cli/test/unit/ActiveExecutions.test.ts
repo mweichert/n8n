@@ -1,6 +1,5 @@
 import { ActiveExecutions } from '@/ActiveExecutions';
 import PCancelable from 'p-cancelable';
-import { v4 as uuid } from 'uuid';
 import { Container } from 'typedi';
 import type { IExecuteResponsePromiseData, IRun } from 'n8n-workflow';
 import { createDeferredPromise } from 'n8n-workflow';

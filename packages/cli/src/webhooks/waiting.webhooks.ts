@@ -7,7 +7,6 @@ import { NodeTypes } from '@/NodeTypes';
 import type { IWorkflowDb } from '@/Interfaces';
 import * as WorkflowExecuteAdditionalData from '@/WorkflowExecuteAdditionalData';
 import { ExecutionRepository } from '@db/repositories';
-import { OwnershipService } from '@/services/ownership.service';
 
 import { AbstractWebhooks } from './abstract.webhooks';
 import type { WaitingWebhookRequest, WebhookResponseCallbackData } from './types';
@@ -17,7 +16,6 @@ export class WaitingWebhooks extends AbstractWebhooks {
 	constructor(
 		nodeTypes: NodeTypes,
 		private executionRepository: ExecutionRepository,
-		private ownershipService: OwnershipService,
 	) {
 		super(nodeTypes);
 	}
@@ -75,13 +73,6 @@ export class WaitingWebhooks extends AbstractWebhooks {
 			staticData: workflowData.staticData,
 			settings: workflowData.settings,
 		});
-
-		let workflowOwner;
-		try {
-			workflowOwner = await this.ownershipService.getWorkflowOwnerCached(workflowData.id!);
-		} catch (error) {
-			throw new NotFoundError('Could not find workflow');
-		}
 
 		const startNode = workflow.getNode(lastNodeExecuted);
 		if (startNode === null) {

@@ -6,7 +6,7 @@ import type {
 	WorkflowActivateMode,
 	WorkflowExecuteMode,
 } from 'n8n-workflow';
-import { Workflow } from 'n8n-workflow';
+import { WebhookPathAlreadyTakenError, Workflow } from 'n8n-workflow';
 import * as NodeExecuteFunctions from 'n8n-core';
 
 import type { IWorkflowDb } from '@/Interfaces';
@@ -188,7 +188,7 @@ export class TestWebhooks extends AbstractWebhooks {
 	): Promise<boolean> {
 		const additionalData = await WorkflowExecuteAdditionalData.getBase();
 		const workflow = new Workflow({
-			id: workflowData.id?.toString(),
+			id: workflowData.id,
 			name: workflowData.name,
 			nodes: workflowData.nodes,
 			connections: workflowData.connections,
@@ -241,9 +241,7 @@ export class TestWebhooks extends AbstractWebhooks {
 
 				// check that there is not a webhook already registered with that path/method
 				if (this.webhookUrls[webhookKey] && !webhookData.webhookId) {
-					throw new Error(
-						`The URL path that the "${webhookData.node}" node uses is already taken. Please change it to something else.`,
-					);
+					throw new WebhookPathAlreadyTakenError(webhookData.node);
 				}
 
 				if (this.workflowWebhooks[webhookData.workflowId] === undefined) {
@@ -377,7 +375,7 @@ export class TestWebhooks extends AbstractWebhooks {
 
 	/** Removes all webhooks of a workflow */
 	private async removeWorkflow(workflow: Workflow): Promise<boolean> {
-		const workflowId = workflow.id!.toString();
+		const workflowId = workflow.id;
 
 		if (this.workflowWebhooks[workflowId] === undefined) {
 			// If it did not exist then there is nothing to remove

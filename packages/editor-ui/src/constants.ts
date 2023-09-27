@@ -361,6 +361,7 @@ export const enum VIEWS {
 	WORKFLOW = 'NodeViewExisting',
 	DEMO = 'WorkflowDemo',
 	TEMPLATE_IMPORT = 'WorkflowTemplate',
+	WORKFLOW_ONBOARDING = 'WorkflowOnboarding',
 	SIGNIN = 'SigninView',
 	SIGNUP = 'SignupView',
 	SIGNOUT = 'SignoutView',
@@ -515,6 +516,7 @@ export const enum STORES {
 	NODE_CREATOR = 'nodeCreator',
 	WEBHOOKS = 'webhooks',
 	HISTORY = 'history',
+	CLOUD_PLAN = 'cloudPlan',
 }
 
 export const enum SignInType {
