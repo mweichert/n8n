@@ -12,7 +12,12 @@ RUN apk add --update jq
 RUN corepack enable && corepack prepare --activate
 USER node
 
-RUN npm i -g @supabase/supabase-js && npm i -g rambda && npm i -g langchain && npm i -g fluture && npm i -g @ironclad/rivet-node && npm i -g @ironclad/rivet-core
+RUN npm i -g @supabase/supabase-js
+RUN npm i -g rambda
+RUN npm i -g langchain
+RUN npm i -g fluture
+RUN npm i -g @ironclad/rivet-node
+RUN npm i -g @ironclad/rivet-core
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
