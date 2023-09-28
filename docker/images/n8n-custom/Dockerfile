@@ -12,6 +12,8 @@ RUN apk add --update jq
 RUN corepack enable && corepack prepare --activate
 USER node
 
+RUN npm i -g @supabase/supabase-js rambda langchain fluture @ironclad/rivet-node @ironclad/rivet-core
+
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
 RUN rm -rf node_modules
