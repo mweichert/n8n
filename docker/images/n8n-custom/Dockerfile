@@ -11,12 +11,12 @@ COPY --chown=node:node patches ./patches
 RUN apk add --update jq
 RUN corepack enable && corepack prepare --activate
 
-RUN npm i -g @supabase/supabase-js
-RUN npm i -g rambda
-RUN npm i -g langchain
-RUN npm i -g fluture
-RUN npm i -g @ironclad/rivet-node
-RUN npm i -g @ironclad/rivet-core
+# RUN npm i -g @supabase/supabase-js
+# RUN npm i -g rambda
+# RUN npm i -g langchain
+# RUN npm i -g fluture
+# RUN npm i -g @ironclad/rivet-node
+# RUN npm i -g @ironclad/rivet-core
 
 USER node
 
@@ -30,7 +30,7 @@ RUN find . -type f -name "*.ts" -o -name "*.js.map" -o -name "*.vue" -o -name "t
 RUN rm -rf packages/@n8n_io/eslint-config packages/editor-ui/src packages/editor-ui/node_modules packages/design-system
 RUN rm -rf patches .npmrc *.yaml node_modules/.cache packages/**/node_modules/.cache packages/**/.turbo .config .cache .local .node /tmp/*
 
-#RUN pnpm add @supabase/supabase-js rambda langchain fluture @ironclad/rivet-core @ironclad/rivet-node 
+RUN pnpm add @supabase/supabase-js rambda langchain fluture @ironclad/rivet-core @ironclad/rivet-node -w n8n-nodes-base
 
 # 2. Start with a new clean image with just the code that is needed to run n8n
 FROM n8nio/base:${NODE_VERSION}
